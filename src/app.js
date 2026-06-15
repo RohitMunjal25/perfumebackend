@@ -20,5 +20,18 @@ app.get("/", (req, res) => {
   });
 
 });
+const productRoutes =
+require("./routes/productRoutes");
 
+app.use(
+ "/api/products",
+ productRoutes
+);
+const paymentRoutes =
+require("./routes/paymentRoutes");
+
+app.use(
+ "/api/payment",
+ paymentRoutes
+);  
 module.exports = app;
