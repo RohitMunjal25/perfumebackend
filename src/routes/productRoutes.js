@@ -17,7 +17,7 @@ const {
  deleteProduct
 
 } = require(
- "../controllers/productController"
+ "../controllers/ProductController"
 );
 
 
