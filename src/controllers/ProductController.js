@@ -38,8 +38,26 @@ async(req,res)=>{
 
  try{
 
+  const filter = {};
+
+  if(req.query.category){
+   filter.category = req.query.category;
+  }
+
+  if(req.query.targetPage){
+   filter.targetPages = req.query.targetPage;
+  }
+
+  if(req.query.homepageSection){
+   filter.homepageSections = req.query.homepageSection;
+  }
+
+  if(req.query.featured){
+   filter.featured = req.query.featured === "true";
+  }
+
   const products =
-  await Product.find()
+  await Product.find(filter)
   .sort({createdAt:-1});
 
   res.json({
@@ -108,8 +126,18 @@ async(req,res)=>{
   await Product.findByIdAndUpdate(
    req.params.id,
    req.body,
-   {new:true}
+   {
+    new:true,
+    runValidators:true
+   }
   );
+
+  if(!product){
+   return res.status(404).json({
+    success:false,
+    message:"Product not found"
+   });
+  }
 
   res.json({
    success:true,
@@ -135,9 +163,17 @@ async(req,res)=>{
 
  try{
 
+  const product =
   await Product.findByIdAndDelete(
    req.params.id
   );
+
+  if(!product){
+   return res.status(404).json({
+    success:false,
+    message:"Product not found"
+   });
+  }
 
   res.json({
    success:true,

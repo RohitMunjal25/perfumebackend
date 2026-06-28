@@ -30,6 +30,21 @@ const orderSchema = new mongoose.Schema({
     required:true
   },
 
+  couponCode:{
+    type:String,
+    default:""
+  },
+
+  discountAmount:{
+    type:Number,
+    default:0
+  },
+
+  finalAmount:{
+    type:Number,
+    default:0
+  },
+
   paymentStatus:{
     type:String,
     enum:[
@@ -54,6 +69,11 @@ const orderSchema = new mongoose.Schema({
   },
 
   trackingLink:{
+    type:String,
+    default:""
+  },
+
+  trackingEmbedSrc:{
     type:String,
     default:""
   },

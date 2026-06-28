@@ -10,51 +10,44 @@ const {
 } = require("../middleware/auth");
 
 const {
+ createCoupon,
+ getCoupons,
+ updateCoupon,
+ deleteCoupon,
+ applyCoupon
+} = require("../controllers/couponController");
 
- addProduct,
-
- getProducts,
-
- getProduct,
-
- updateProduct,
-
- deleteProduct
-
-} = require(
- "../controllers/ProductController"
+router.post(
+ "/apply",
+ applyCoupon
 );
-
 
 router.post(
  "/",
  auth,
  admin,
- addProduct
+ createCoupon
 );
 
 router.get(
  "/",
- getProducts
-);
-
-router.get(
- "/:id",
- getProduct
+ auth,
+ admin,
+ getCoupons
 );
 
 router.put(
  "/:id",
  auth,
  admin,
- updateProduct
+ updateCoupon
 );
 
 router.delete(
  "/:id",
  auth,
  admin,
- deleteProduct
+ deleteCoupon
 );
 
 module.exports =

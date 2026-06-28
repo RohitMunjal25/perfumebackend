@@ -34,4 +34,37 @@ app.use(
  "/api/payment",
  paymentRoutes
 );  
+
+const orderRoutes =
+require("./routes/orderRoutes");
+
+app.use(
+ "/api/orders",
+ orderRoutes
+);
+
+const couponRoutes =
+require("./routes/couponRoutes");
+
+app.use(
+ "/api/coupons",
+ couponRoutes
+);
+
+const contactRoutes =
+require("./routes/contactRoutes");
+
+app.use(
+ "/api/contact",
+ contactRoutes
+);
+
+const newsletterRoutes =
+require("./routes/newsletterRoutes");
+
+app.use(
+ "/api/newsletter",
+ newsletterRoutes
+);
+
 module.exports = app;

@@ -13,6 +13,41 @@ const productSchema = new mongoose.Schema({
 
   category:String,
 
+  targetPages:[
+    {
+      type:String,
+      enum:[
+        "home",
+        "categories",
+        "collections"
+      ]
+    }
+  ],
+
+  homepageSections:[
+    {
+      type:String,
+      trim:true
+    }
+  ],
+
+  productImages:[
+    {
+      url:{
+        type:String,
+        required:true
+      },
+      angle:{
+        type:String,
+        default:""
+      },
+      alt:{
+        type:String,
+        default:""
+      }
+    }
+  ],
+
   price:{
     type:Number,
     required:true
