@@ -12,6 +12,7 @@ const {
 const {
  createContact,
  getContacts,
+ updateContactStatus,
  deleteContact
 } = require("../controllers/contactController");
 
@@ -26,6 +27,8 @@ router.get(
  admin,
  getContacts
 );
+
+router.patch("/admin/:id", auth, admin, updateContactStatus);
 
 router.delete(
  "/admin/:id",

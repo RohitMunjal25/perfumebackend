@@ -11,15 +11,10 @@ const getDashboardStats = async (req, res) => {
     // Order status ke hisaab se filters
     const pendingOrders = await Order.countDocuments({ orderStatus: "pending" });
     const completedOrders = await Order.countDocuments({ orderStatus: "delivered" });
-    const returnOrders = await Order.countDocuments({ 
-      $in: ["cancelled", "returned"] // dono ko return manta hai
-    });
+    const returnOrders = await Order.countDocuments({ orderStatus: { $in: ["cancelled", "returned"] } });
 
-    const paidOrders = await Order.find({ paymentStatus: "paid" });
-    const totalSales = paidOrders.reduce(
-      (acc, order) => acc + (order.finalAmount || order.totalAmount),
-      0
-    );
+    const [sales] = await Order.aggregate([{ $match: { paymentStatus: "paid" } }, { $group: { _id: null, total: { $sum: { $ifNull: ["$finalAmount", "$totalAmount"] } } } }]);
+    const totalSales = sales?.total || 0;
 
     const recentOrders = await Order.find()
       .populate("userId", "name email")

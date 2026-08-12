@@ -19,6 +19,15 @@ const getUserProfile = async (req, res) => {
   }
 };
 
+const updateName = async (req, res) => {
+  try {
+    const name = String(req.body.name || "").trim();
+    if (!name) return res.status(400).json({ success: false, message: "Name is required" });
+    const user = await User.findByIdAndUpdate(req.user.id, { name }, { new: true, runValidators: true }).select("-password");
+    res.json({ success: true, message: "Name updated", user });
+  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+};
+
 // ADD NEW ADDRESS
 const addAddress = async (req, res) => {
   try {
@@ -55,8 +64,25 @@ const deleteAddress = async (req, res) => {
   }
 };
 
+const updateAddress = async (req, res) => {
+  try {
+    const allowedFields = ["fullName", "phone", "address", "city", "state", "pincode"];
+    const changes = Object.fromEntries(Object.entries(req.body).filter(([key]) => allowedFields.includes(key)).map(([key, value]) => [`addresses.$.${key}`, value]));
+    if (!Object.keys(changes).length) return res.status(400).json({ success: false, message: "No valid address fields provided" });
+    const user = await User.findOneAndUpdate(
+      { _id: req.user.id, "addresses._id": req.params.addressId },
+      { $set: changes },
+      { new: true, runValidators: true }
+    ).select("-password");
+    if (!user) return res.status(404).json({ success: false, message: "Address not found" });
+    res.json({ success: true, message: "Address updated", user });
+  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+};
+
 module.exports = {
   getUserProfile,
+  updateName,
   addAddress,
+  updateAddress,
   deleteAddress
 };

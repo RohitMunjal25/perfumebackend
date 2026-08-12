@@ -14,21 +14,20 @@ const userSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: true
+      required: true,
+      trim: true
     },
     email: {
       type: String,
-      required: true,
-      unique: true
-    },
-    mobile: {
-      type: String,
-      required: true,
-      unique: true
+      unique: true,
+      sparse: true,
+      lowercase: true,
+      trim: true
     },
     password: {
       type: String,
-      required: true
+      minlength: 8,
+      select: false
     },
     role: {
       type: String,
@@ -40,7 +39,8 @@ const userSchema = new mongoose.Schema(
       default: false
     },
     // Naya feature: Multiple addresses save karne ke liye array
-    addresses: [addressSchema]
+    addresses: [addressSchema],
+    lastLogoutAt: Date
   },
   {
     timestamps: true

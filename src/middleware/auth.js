@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const TokenBlacklist = require("../models/TokenBlacklist");
 
 const auth = async (req, res, next) => {
 
@@ -27,7 +28,12 @@ const auth = async (req, res, next) => {
         process.env.JWT_SECRET
       );
 
+    if (await TokenBlacklist.exists({ token })) {
+      return res.status(401).json({ success: false, message: "Session has ended" });
+    }
+
     req.user = decoded;
+    req.token = token;
 
     next();
 

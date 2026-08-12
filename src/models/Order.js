@@ -63,7 +63,8 @@ const orderSchema = new mongoose.Schema({
       "packed",
       "shipped",
       "delivered",
-      "cancelled"
+      "cancelled",
+      "returned"
     ],
     default:"pending"
   },
@@ -72,6 +73,8 @@ const orderSchema = new mongoose.Schema({
     type:String,
     default:""
   },
+
+  courierName:{ type:String, default:"" },
 
   trackingEmbedSrc:{
     type:String,

@@ -6,7 +6,7 @@ const createOrder = async(req,res)=>{
  try{
   const orderData = {
    ...req.body,
-   userId:req.body.userId || (req.user && req.user.id)
+   userId:req.user && req.user.id
   };
 
   if(!orderData.userId){
@@ -21,14 +21,15 @@ const createOrder = async(req,res)=>{
    orderData.totalAmount - (orderData.discountAmount || 0);
   }
 
-  const order = await Order.create(orderData);
-
-  if(order.couponCode){
-   await Coupon.findOneAndUpdate(
-    {code:order.couponCode.toUpperCase()},
-    {$inc:{usedCount:1}}
+  if (orderData.couponCode) {
+   const now = new Date();
+   const coupon = await Coupon.findOneAndUpdate(
+    { code: orderData.couponCode.toUpperCase(), isActive: true, startDate: { $lte: now }, $and: [{ $or: [{ endDate: null }, { endDate: { $gte: now } }] }, { $or: [{ usageLimit: null }, { $expr: { $lt: ["$usedCount", "$usageLimit"] } }] }] },
+    { $inc: { usedCount: 1 } }, { new: true }
    );
+   if (!coupon) return res.status(400).json({ success: false, message: "Coupon is invalid, expired, or its usage limit has been reached" });
   }
+  const order = await Order.create(orderData);
 
   res.status(201).json({
    success:true,
@@ -65,7 +66,7 @@ const getMyOrders = async(req,res)=>{
 const getOrders = async(req,res)=>{
  try{
   const orders = await Order.find()
-  .populate("userId","name email mobile")
+  .populate("userId","name email")
   .populate("products.productId")
   .sort({createdAt:-1});
 
@@ -85,7 +86,7 @@ const getOrders = async(req,res)=>{
 const getOrder = async(req,res)=>{
  try{
   const order = await Order.findById(req.params.id)
-  .populate("userId","name email mobile")
+  .populate("userId","name email")
   .populate("products.productId");
 
   if(!order){
@@ -151,6 +152,7 @@ const updateOrder = async(req,res)=>{
    paymentStatus:req.body.paymentStatus,
    orderStatus:req.body.orderStatus,
    trackingLink:req.body.trackingLink,
+   courierName:req.body.courierName,
    trackingEmbedSrc:req.body.trackingEmbedSrc
   };
 

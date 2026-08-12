@@ -1,59 +1,11 @@
 const nodemailer = require("nodemailer");
-
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false,
-  family: 4, 
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
-
-const sendOTPEmail = async (email, otp) => {
-  await transporter.sendMail({
-    from: `"Perfume Store" <${process.env.EMAIL_USER}>`,
-    to: email,
-    subject: "Verification OTP",
-    html: `<h2>Your OTP is: ${otp}</h2>`
-  });
-};
-
-const sendNewsletterWelcome = async (email) => {
-  await transporter.sendMail({
-    from: `"Perfume Store" <${process.env.EMAIL_USER}>`,
-    to: email,
-    subject: "Welcome to Our Newsletter!",
-    html: `<h2>Thank you for subscribing!</h2><p>You have successfully subscribed to our newsletter. We will keep you updated with our latest products and offers.</p>`
-  });
-};
-
-const sendContactTicket = async (email, ticketNumber) => {
-  await transporter.sendMail({
-    from: `"Perfume Store Support" <${process.env.EMAIL_USER}>`,
-    to: email,
-    subject: `Complaint Registered - Ticket #${ticketNumber}`,
-    html: `<h2>Support Ticket Generated</h2>
-           <p>Your query has been received. Your ticket number is <strong>${ticketNumber}</strong>.</p>
-           <p>Our team will look into this and respond shortly.</p>`
-  });
-};
-
-const sendTrackingUpdate = async (email, orderId, trackingLink, courierName) => {
-  await transporter.sendMail({
-    from: `"Perfume Store Orders" <${process.env.EMAIL_USER}>`,
-    to: email,
-    subject: `Your Order ${orderId} has been Dispatched!`,
-    html: `<h2>Good News! Your order is on the way.</h2>
-           <p>Your item has been dispatched via <strong>${courierName}</strong>.</p>
-           <p>You can track your order here: <a href="${trackingLink}">${trackingLink}</a></p>`
-  });
-};
-
-module.exports = {
-  sendOTPEmail,
-  sendNewsletterWelcome,
-  sendContactTicket,
-  sendTrackingUpdate
-};
+const transporter = nodemailer.createTransport({ host: "smtp.gmail.com", port: 587, secure: false, family: 4, auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS } });
+const brand = "Darnera";
+const template = (title, body) => `<div style="background:#f8f5f1;padding:32px;font-family:Arial,sans-serif;color:#2b2118"><div style="max-width:560px;margin:auto;background:#fff;border-radius:12px;overflow:hidden"><div style="padding:26px;background:#261b16;color:#fff;text-align:center;font-size:26px;letter-spacing:2px">${brand}</div><div style="padding:30px"><h2 style="margin-top:0">${title}</h2>${body}</div><div style="padding:18px 30px;color:#806f62;font-size:12px;background:#fcfaf8">© ${new Date().getFullYear()} ${brand}. Crafted with care.</div></div></div>`;
+const send = (to, subject, html) => transporter.sendMail({ from: `"${brand}" <${process.env.EMAIL_USER}>`, to, subject, html });
+const sendOTPEmail = (email, otp) => send(email, "Your Darnera verification code", template("Verify your account", `<p>Use this code to continue:</p><p style="font-size:32px;letter-spacing:7px;font-weight:bold">${otp}</p><p>This code expires in 5 minutes. Never share it with anyone.</p>`));
+const sendNewsletterWelcome = (email) => send(email, "Welcome to Darnera", template("You’re on the list", "<p>Thank you for subscribing. You’ll receive our newest fragrances, releases and offers in your inbox.</p>"));
+const sendContactTicket = (email, ticketNumber) => send(email, `Support request received — #${ticketNumber}`, template("We’ve received your request", `<p>Your support ticket is <strong>#${ticketNumber}</strong>. Our team will review it and update you by email.</p>`));
+const sendContactResolved = (email, ticketNumber, note) => send(email, `Support ticket resolved — #${ticketNumber}`, template("Your support ticket is resolved", `<p>Ticket <strong>#${ticketNumber}</strong> has been marked resolved.</p>${note ? `<p><strong>Update:</strong> ${note}</p>` : ""}`));
+const sendTrackingUpdate = (email, orderId, trackingLink, courierName) => send(email, `Your order ${orderId} is on its way`, template("Your order has shipped", `<p>Your order has been dispatched with <strong>${courierName}</strong>.</p><p><a style="display:inline-block;background:#261b16;color:#fff;padding:12px 18px;border-radius:6px;text-decoration:none" href="${trackingLink}">Track your package</a></p>`));
+module.exports = { sendOTPEmail, sendNewsletterWelcome, sendContactTicket, sendContactResolved, sendTrackingUpdate };

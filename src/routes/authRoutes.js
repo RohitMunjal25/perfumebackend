@@ -1,18 +1,19 @@
-const express = require("express");
-const router = express.Router();
+const router = require("express").Router();
+const { auth } = require("../middleware/auth");
+const { requestOtp, verifyOtp, registerWithPassword, loginWithPassword, setPassword, requestEmailChange, verifyEmailChange, logout } = require("../controllers/authController");
+const { getUserProfile, updateName, addAddress, updateAddress, deleteAddress } = require("../controllers/userController");
 
-const { register, verifyOTP, login } = require("../controllers/authController");
-const { auth } = require("../middleware/auth"); // Tera auth middleware yahan import kiya
-const { getUserProfile, addAddress, deleteAddress } = require("../controllers/userController");
-
-// Authentication Routes
-router.post("/register", register);
-router.post("/verify-otp", verifyOTP);
-router.post("/login", login);
-
-// Naye User Profile & Multiple Address Routes
-router.get("/profile", auth, getUserProfile); 
-router.post("/address", auth, addAddress); 
-router.delete("/address/:addressId", auth, deleteAddress); 
-
+router.post("/otp/request", requestOtp);
+router.post("/otp/verify", verifyOtp);
+router.post("/password/register", registerWithPassword);
+router.post("/password/login", loginWithPassword);
+router.patch("/password", auth, setPassword);
+router.post("/email-change/request", auth, requestEmailChange);
+router.post("/email-change/verify", auth, verifyEmailChange);
+router.post("/logout", auth, logout);
+router.get("/profile", auth, getUserProfile);
+router.patch("/profile/name", auth, updateName);
+router.post("/addresses", auth, addAddress);
+router.patch("/addresses/:addressId", auth, updateAddress);
+router.delete("/addresses/:addressId", auth, deleteAddress);
 module.exports = router;

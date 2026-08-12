@@ -61,10 +61,13 @@ app.use(
 
 const newsletterRoutes =
 require("./routes/newsletterRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 
 app.use(
  "/api/newsletter",
  newsletterRoutes
 );
+
+app.use("/api/admin", adminRoutes);
 
 module.exports = app;
