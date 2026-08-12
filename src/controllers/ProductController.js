@@ -1,206 +1,147 @@
-const Product =
-require("../models/Product");
-
+const Product = require("../models/Product");
 
 // ADD PRODUCT
-
-const addProduct =
-async(req,res)=>{
-
- try{
-
-  const product =
-  await Product.create(
-   req.body
-  );
-
+const addProduct = async(req, res) => {
+ try {
+  const product = await Product.create(req.body);
   res.status(201).json({
-   success:true,
+   success: true,
    product
   });
-
- }catch(error){
-
+ } catch(error) {
   res.status(500).json({
-   success:false,
-   message:error.message
+   success: false,
+   message: error.message
   });
-
  }
-
 };
 
-
-// GET ALL PRODUCTS
-
-const getProducts =
-async(req,res)=>{
-
- try{
-
+// GET ALL PRODUCTS (With Search, Filter & Pagination)
+const getProducts = async(req, res) => {
+ try {
   const filter = {};
+
+  if (req.query.keyword) {
+    filter.name = {
+      $regex: req.query.keyword,
+      $options: "i"
+    };
+  }
 
   if(req.query.category){
    filter.category = req.query.category;
   }
-
   if(req.query.targetPage){
    filter.targetPages = req.query.targetPage;
   }
-
   if(req.query.homepageSection){
    filter.homepageSections = req.query.homepageSection;
   }
-
   if(req.query.featured){
    filter.featured = req.query.featured === "true";
   }
 
-  const products =
-  await Product.find(filter)
-  .sort({createdAt:-1});
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 12; 
+  const skip = (page - 1) * limit;
+
+  const totalProducts = await Product.countDocuments(filter);
+
+  const products = await Product.find(filter)
+  .sort({createdAt: -1})
+  .skip(skip)
+  .limit(limit);
 
   res.json({
-   success:true,
+   success: true,
+   count: products.length,
+   totalProducts,
+   totalPages: Math.ceil(totalProducts / limit),
+   currentPage: page,
    products
   });
-
- }catch(error){
-
+ } catch(error) {
   res.status(500).json({
-   success:false,
-   message:error.message
+   success: false,
+   message: error.message
   });
-
  }
-
 };
-
 
 // GET SINGLE PRODUCT
-
-const getProduct =
-async(req,res)=>{
-
- try{
-
-  const product =
-  await Product.findById(
-   req.params.id
-  );
-
+const getProduct = async(req, res) => {
+ try {
+  const product = await Product.findById(req.params.id);
   if(!product){
-
    return res.status(404).json({
-    success:false,
-    message:"Product not found"
+    success: false,
+    message: "Product not found"
    });
-
   }
-
   res.json({
-   success:true,
+   success: true,
    product
   });
-
- }catch(error){
-
+ } catch(error) {
   res.status(500).json({
-   success:false,
-   message:error.message
+   success: false,
+   message: error.message
   });
-
  }
-
 };
-
 
 // UPDATE PRODUCT
-
-const updateProduct =
-async(req,res)=>{
-
- try{
-
-  const product =
-  await Product.findByIdAndUpdate(
+const updateProduct = async(req, res) => {
+ try {
+  const product = await Product.findByIdAndUpdate(
    req.params.id,
    req.body,
-   {
-    new:true,
-    runValidators:true
-   }
+   { new: true, runValidators: true }
   );
-
   if(!product){
    return res.status(404).json({
-    success:false,
-    message:"Product not found"
+    success: false,
+    message: "Product not found"
    });
   }
-
   res.json({
-   success:true,
+   success: true,
    product
   });
-
- }catch(error){
-
+ } catch(error) {
   res.status(500).json({
-   success:false,
-   message:error.message
+   success: false,
+   message: error.message
   });
-
  }
-
 };
 
-
 // DELETE PRODUCT
-
-const deleteProduct =
-async(req,res)=>{
-
- try{
-
-  const product =
-  await Product.findByIdAndDelete(
-   req.params.id
-  );
-
+const deleteProduct = async(req, res) => {
+ try {
+  const product = await Product.findByIdAndDelete(req.params.id);
   if(!product){
    return res.status(404).json({
-    success:false,
-    message:"Product not found"
+    success: false,
+    message: "Product not found"
    });
   }
-
   res.json({
-   success:true,
-   message:"Product deleted"
+   success: true,
+   message: "Product deleted"
   });
-
- }catch(error){
-
+ } catch(error) {
   res.status(500).json({
-   success:false,
-   message:error.message
+   success: false,
+   message: error.message
   });
-
  }
-
 };
 
 module.exports = {
-
  addProduct,
-
  getProducts,
-
  getProduct,
-
  updateProduct,
-
  deleteProduct
-
 };

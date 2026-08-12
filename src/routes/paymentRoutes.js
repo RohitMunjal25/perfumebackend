@@ -1,18 +1,10 @@
-const express =
-require("express");
+// paymentRoutes.js
+const express = require("express");
+const router = express.Router();
+const { createOrder } = require("../controllers/paymentController");
+const { auth } = require("../middleware/auth"); // Auth middleware import kiya
 
-const router =
-express.Router();
-
-const {
- createOrder
-} = require(
- "../controllers/paymentController"
-);
-
-router.post(
- "/create-order",
- createOrder
-);
+// Ab sirf logged-in user hi payment initiate kar payega
+router.post("/create-order", auth, createOrder); 
 
 module.exports = router;

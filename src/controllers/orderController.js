@@ -1,14 +1,9 @@
-const Order =
-require("../models/Order");
+const Order = require("../models/Order");
+const Coupon = require("../models/Coupon");
+const { sendTrackingUpdate } = require("../services/emailService");
 
-const Coupon =
-require("../models/Coupon");
-
-const createOrder =
-async(req,res)=>{
-
+const createOrder = async(req,res)=>{
  try{
-
   const orderData = {
    ...req.body,
    userId:req.body.userId || (req.user && req.user.id)
@@ -26,8 +21,7 @@ async(req,res)=>{
    orderData.totalAmount - (orderData.discountAmount || 0);
   }
 
-  const order =
-  await Order.create(orderData);
+  const order = await Order.create(orderData);
 
   if(order.couponCode){
    await Coupon.findOneAndUpdate(
@@ -42,23 +36,16 @@ async(req,res)=>{
   });
 
  }catch(error){
-
   res.status(500).json({
    success:false,
    message:error.message
   });
-
  }
-
 };
 
-const getMyOrders =
-async(req,res)=>{
-
+const getMyOrders = async(req,res)=>{
  try{
-
-  const orders =
-  await Order.find({userId:req.user.id})
+  const orders = await Order.find({userId:req.user.id})
   .populate("products.productId")
   .sort({createdAt:-1});
 
@@ -68,23 +55,16 @@ async(req,res)=>{
   });
 
  }catch(error){
-
   res.status(500).json({
    success:false,
    message:error.message
   });
-
  }
-
 };
 
-const getOrders =
-async(req,res)=>{
-
+const getOrders = async(req,res)=>{
  try{
-
-  const orders =
-  await Order.find()
+  const orders = await Order.find()
   .populate("userId","name email mobile")
   .populate("products.productId")
   .sort({createdAt:-1});
@@ -95,23 +75,16 @@ async(req,res)=>{
   });
 
  }catch(error){
-
   res.status(500).json({
    success:false,
    message:error.message
   });
-
  }
-
 };
 
-const getOrder =
-async(req,res)=>{
-
+const getOrder = async(req,res)=>{
  try{
-
-  const order =
-  await Order.findById(req.params.id)
+  const order = await Order.findById(req.params.id)
   .populate("userId","name email mobile")
   .populate("products.productId");
 
@@ -128,23 +101,16 @@ async(req,res)=>{
   });
 
  }catch(error){
-
   res.status(500).json({
    success:false,
    message:error.message
   });
-
  }
-
 };
 
-const getMyOrder =
-async(req,res)=>{
-
+const getMyOrder = async(req,res)=>{
  try{
-
-  const order =
-  await Order.findOne({
+  const order = await Order.findOne({
    _id:req.params.id,
    userId:req.user.id
   }).populate("products.productId");
@@ -162,20 +128,24 @@ async(req,res)=>{
   });
 
  }catch(error){
-
   res.status(500).json({
    success:false,
    message:error.message
   });
-
  }
-
 };
 
-const updateOrder =
-async(req,res)=>{
-
+const updateOrder = async(req,res)=>{
  try{
+  const orderId = req.params.id;
+  const originalOrder = await Order.findById(orderId).populate("userId");
+
+  if(!originalOrder){
+   return res.status(404).json({
+    success:false,
+    message:"Order not found"
+   });
+  }
 
   const allowedUpdates = {
    paymentStatus:req.body.paymentStatus,
@@ -190,37 +160,36 @@ async(req,res)=>{
    }
   });
 
-  const order =
-  await Order.findByIdAndUpdate(
-   req.params.id,
+  const updatedOrder = await Order.findByIdAndUpdate(
+   orderId,
    allowedUpdates,
    {
     new:true,
     runValidators:true
    }
-  );
+  ).populate("userId");
 
-  if(!order){
-   return res.status(404).json({
-    success:false,
-    message:"Order not found"
-   });
+  // Email Tracking Logic
+  if(req.body.trackingLink && req.body.trackingLink !== originalOrder.trackingLink) {
+     const email = originalOrder.userId.email;
+     const courier = req.body.courierName || "Courier Partner";
+     
+     await sendTrackingUpdate(email, updatedOrder._id, updatedOrder.trackingLink, courier);
+     
+     // NOTE: Agar WhatsApp service add karni ho toh yahan uska function call kar dena
   }
 
   res.json({
    success:true,
-   order
+   order: updatedOrder
   });
 
  }catch(error){
-
   res.status(500).json({
    success:false,
    message:error.message
   });
-
  }
-
 };
 
 module.exports = {
