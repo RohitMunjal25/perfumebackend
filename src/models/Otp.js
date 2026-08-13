@@ -5,7 +5,11 @@ const otpSchema = new mongoose.Schema({
 
   email: String,
 
-  purpose: { type: String, enum: ["auth", "change_email"], default: "auth" },
+  mobile: String,
+
+  password: String,
+
+  purpose: { type: String, enum: ["auth", "change_email", "password_reset"], default: "auth" },
   target: { type: String, required: true },
 
   otp: String,

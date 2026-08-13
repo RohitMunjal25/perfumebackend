@@ -24,6 +24,12 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true
     },
+    mobile: {
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true
+    },
     password: {
       type: String,
       minlength: 8,
