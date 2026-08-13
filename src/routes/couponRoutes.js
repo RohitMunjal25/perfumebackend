@@ -23,6 +23,11 @@ router.post(
 );
 
 router.post(
+ "/validate",
+ applyCoupon
+);
+
+router.post(
  "/",
  auth,
  admin,

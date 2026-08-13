@@ -50,6 +50,20 @@ router.put(
  updateProduct
 );
 
+router.patch(
+ "/:id",
+ auth,
+ admin,
+ updateProduct
+);
+
+router.patch(
+ "/:id",
+ auth,
+ admin,
+ updateProduct
+);
+
 router.delete(
  "/:id",
  auth,

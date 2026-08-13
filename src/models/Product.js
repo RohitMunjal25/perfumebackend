@@ -13,6 +13,18 @@ const productSchema = new mongoose.Schema({
 
   category:String,
 
+  coverImage:{ type:String, default:"" },
+
+  forHim:{ type:Boolean, default:false },
+  forHer:{ type:Boolean, default:false },
+  unisex:{ type:Boolean, default:true },
+
+  coverImage:{ type:String, default:"" },
+
+  forHim:{ type:Boolean, default:false },
+  forHer:{ type:Boolean, default:false },
+  unisex:{ type:Boolean, default:true },
+
   targetPages:[
     {
       type:String,

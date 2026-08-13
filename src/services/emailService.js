@@ -1,11 +1,131 @@
 const nodemailer = require("nodemailer");
-const transporter = nodemailer.createTransport({ host: "smtp.gmail.com", port: 587, secure: false, family: 4, auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS } });
+
+const transporter =
+nodemailer.createTransport({
+  host:"smtp.gmail.com",
+  port:587,
+  secure:false,
+  family:4,
+  auth:{
+    user:process.env.EMAIL_USER,
+    pass:process.env.EMAIL_PASS
+  }
+});
+
 const brand = "Darnera";
-const template = (title, body) => `<div style="background:#f8f5f1;padding:32px;font-family:Arial,sans-serif;color:#2b2118"><div style="max-width:560px;margin:auto;background:#fff;border-radius:12px;overflow:hidden"><div style="padding:26px;background:#261b16;color:#fff;text-align:center;font-size:26px;letter-spacing:2px">${brand}</div><div style="padding:30px"><h2 style="margin-top:0">${title}</h2>${body}</div><div style="padding:18px 30px;color:#806f62;font-size:12px;background:#fcfaf8">© ${new Date().getFullYear()} ${brand}. Crafted with care.</div></div></div>`;
-const send = (to, subject, html) => transporter.sendMail({ from: `"${brand}" <${process.env.EMAIL_USER}>`, to, subject, html });
-const sendOTPEmail = (email, otp) => send(email, "Your Darnera verification code", template("Verify your account", `<p>Use this code to continue:</p><p style="font-size:32px;letter-spacing:7px;font-weight:bold">${otp}</p><p>This code expires in 5 minutes. Never share it with anyone.</p>`));
-const sendNewsletterWelcome = (email) => send(email, "Welcome to Darnera", template("You’re on the list", "<p>Thank you for subscribing. You’ll receive our newest fragrances, releases and offers in your inbox.</p>"));
-const sendContactTicket = (email, ticketNumber) => send(email, `Support request received — #${ticketNumber}`, template("We’ve received your request", `<p>Your support ticket is <strong>#${ticketNumber}</strong>. Our team will review it and update you by email.</p>`));
-const sendContactResolved = (email, ticketNumber, note) => send(email, `Support ticket resolved — #${ticketNumber}`, template("Your support ticket is resolved", `<p>Ticket <strong>#${ticketNumber}</strong> has been marked resolved.</p>${note ? `<p><strong>Update:</strong> ${note}</p>` : ""}`));
-const sendTrackingUpdate = (email, orderId, trackingLink, courierName) => send(email, `Your order ${orderId} is on its way`, template("Your order has shipped", `<p>Your order has been dispatched with <strong>${courierName}</strong>.</p><p><a style="display:inline-block;background:#261b16;color:#fff;padding:12px 18px;border-radius:6px;text-decoration:none" href="${trackingLink}">Track your package</a></p>`));
-module.exports = { sendOTPEmail, sendNewsletterWelcome, sendContactTicket, sendContactResolved, sendTrackingUpdate };
+
+const template = (title, body) =>
+`<div style="background:#f8f5f1;padding:32px;font-family:Arial,sans-serif;color:#2b2118">
+  <div style="max-width:560px;margin:auto;background:#fff;border-radius:12px;overflow:hidden">
+    <div style="padding:26px;background:#261b16;color:#fff;text-align:center;font-size:26px;letter-spacing:2px">${brand}</div>
+    <div style="padding:30px">
+      <h2 style="margin-top:0">${title}</h2>
+      ${body}
+    </div>
+    <div style="padding:18px 30px;color:#806f62;font-size:12px;background:#fcfaf8">
+      © ${new Date().getFullYear()} ${brand}. Crafted with care.
+    </div>
+  </div>
+</div>`;
+
+const send = (to, subject, html) =>
+transporter.sendMail({
+  from:`"${brand}" <${process.env.EMAIL_USER}>`,
+  to,
+  subject,
+  html
+});
+
+const sendOTPEmail = (email, otp) =>
+send(
+  email,
+  "Your Darnera verification code",
+  template(
+    "Verify your account",
+    `<p>Use this code to continue:</p>
+    <p style="font-size:32px;letter-spacing:7px;font-weight:bold">${otp}</p>
+    <p>This code expires in 5 minutes. Never share it with anyone.</p>`
+  )
+);
+
+const sendNewsletterWelcome = (email) =>
+send(
+  email,
+  "Welcome to Darnera",
+  template(
+    "You're on the list",
+    "<p>Thank you for subscribing. You'll receive our newest fragrances, releases and offers in your inbox.</p>"
+  )
+);
+
+const sendContactTicket = (email, ticketNumber) =>
+send(
+  email,
+  `Support request received - #${ticketNumber}`,
+  template(
+    "We've received your request",
+    `<p>Your support ticket is <strong>#${ticketNumber}</strong>. Our team will review it and update you by email.</p>`
+  )
+);
+
+const sendContactResolved = (email, ticketNumber, note) =>
+send(
+  email,
+  `Support ticket resolved - #${ticketNumber}`,
+  template(
+    "Your support ticket is resolved",
+    `<p>Ticket <strong>#${ticketNumber}</strong> has been marked resolved.</p>
+    ${note ? `<p><strong>Update:</strong> ${note}</p>` : ""}`
+  )
+);
+
+const sendOrderConfirmation = (email, order) => {
+  const orderId = String(order._id).slice(-8).toUpperCase();
+  const total = Number(order.finalAmount || order.totalAmount || 0).toLocaleString("en-IN");
+  const address = order.shippingAddress || {};
+  const items = (order.products || [])
+    .map((item) =>
+      `<tr>
+        <td style="padding:8px 0;border-bottom:1px solid #eee">${item.name || "Product"} x ${item.quantity || 1}</td>
+        <td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right">Rs. ${Number(item.price || 0).toLocaleString("en-IN")}</td>
+      </tr>`
+    )
+    .join("");
+
+  return send(
+    email,
+    `Thank you for your order #${orderId}`,
+    template(
+      "Thank you for your order",
+      `<p>Your Darnera order has been placed successfully. We will email you again when it ships.</p>
+      <p><strong>Order ID:</strong> #${orderId}</p>
+      <table style="width:100%;border-collapse:collapse;margin:18px 0">${items}</table>
+      <p><strong>Total:</strong> Rs. ${total}</p>
+      <p><strong>Delivery address:</strong><br>
+      ${address.fullName || ""}<br>
+      ${address.address || ""}<br>
+      ${address.city || ""}, ${address.state || ""} ${address.pincode || ""}<br>
+      ${address.phone || ""}</p>`
+    )
+  );
+};
+
+const sendTrackingUpdate = (email, orderId, trackingLink, courierName) =>
+send(
+  email,
+  `Your order ${orderId} is on its way`,
+  template(
+    "Your order has shipped",
+    `<p>Your order has been dispatched with <strong>${courierName}</strong>.</p>
+    <p><a style="display:inline-block;background:#261b16;color:#fff;padding:12px 18px;border-radius:6px;text-decoration:none" href="${trackingLink}">Track your package</a></p>`
+  )
+);
+
+module.exports = {
+  sendOTPEmail,
+  sendNewsletterWelcome,
+  sendContactTicket,
+  sendContactResolved,
+  sendOrderConfirmation,
+  sendTrackingUpdate
+};

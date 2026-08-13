@@ -1,6 +1,7 @@
 const Order = require("../models/Order");
 const Coupon = require("../models/Coupon");
-const { sendTrackingUpdate } = require("../services/emailService");
+const User = require("../models/User");
+const { sendOrderConfirmation, sendTrackingUpdate } = require("../services/emailService");
 
 const createOrder = async(req,res)=>{
  try{
@@ -22,6 +23,15 @@ const createOrder = async(req,res)=>{
   }
 
   if (orderData.couponCode) {
+   const coupon = await Coupon.findOne({ code: orderData.couponCode.toUpperCase(), isActive: true });
+   if (!coupon) return res.status(400).json({ success:false, message:"Coupon is invalid" });
+   const amount = Number(orderData.totalAmount || 0);
+   const calculated = coupon.discountType === "percentage" ? (amount * coupon.discountValue) / 100 : coupon.discountValue;
+   orderData.discountAmount = Math.min(calculated, coupon.maxDiscount || calculated, amount);
+   orderData.finalAmount = Math.max(0, amount - orderData.discountAmount);
+  }
+
+  if (orderData.couponCode) {
    const now = new Date();
    const coupon = await Coupon.findOneAndUpdate(
     { code: orderData.couponCode.toUpperCase(), isActive: true, startDate: { $lte: now }, $and: [{ $or: [{ endDate: null }, { endDate: { $gte: now } }] }, { $or: [{ usageLimit: null }, { $expr: { $lt: ["$usedCount", "$usageLimit"] } }] }] },
@@ -30,6 +40,20 @@ const createOrder = async(req,res)=>{
    if (!coupon) return res.status(400).json({ success: false, message: "Coupon is invalid, expired, or its usage limit has been reached" });
   }
   const order = await Order.create(orderData);
+
+  const user =
+  await User.findById(orderData.userId)
+  .select("email");
+
+  if(user && user.email){
+   sendOrderConfirmation(user.email, order)
+   .catch((error)=>{
+    console.log(
+     "Order confirmation email failed:",
+     error.message
+    );
+   });
+  }
 
   res.status(201).json({
    success:true,
@@ -146,6 +170,12 @@ const updateOrder = async(req,res)=>{
     success:false,
     message:"Order not found"
    });
+  }
+
+  if (originalOrder.trackingLink || originalOrder.courierName) {
+   if (req.body.trackingLink !== undefined || req.body.courierName !== undefined) {
+    return res.status(409).json({ success:false, message:"Shipment tracking is locked after it has been saved" });
+   }
   }
 
   const allowedUpdates = {

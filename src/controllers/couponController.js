@@ -128,8 +128,11 @@ async(req,res)=>{
 
   const {
    code,
-   orderAmount
+   orderAmount,
+   subtotal
   } = req.body;
+
+  const amount = Number(orderAmount ?? subtotal ?? 0);
 
   const coupon =
   await Coupon.findOne({
@@ -160,7 +163,7 @@ async(req,res)=>{
    });
   }
 
-  if(orderAmount < coupon.minOrderAmount){
+  if(amount < coupon.minOrderAmount){
    return res.status(400).json({
     success:false,
     message:`Minimum order amount is ${coupon.minOrderAmount}`
@@ -176,7 +179,7 @@ async(req,res)=>{
 
   let discountAmount =
   coupon.discountType === "percentage"
-   ? (orderAmount * coupon.discountValue) / 100
+   ? (amount * coupon.discountValue) / 100
    : coupon.discountValue;
 
   if(coupon.maxDiscount){
@@ -185,13 +188,15 @@ async(req,res)=>{
   }
 
   discountAmount =
-  Math.min(discountAmount,orderAmount);
+  Math.min(discountAmount,amount);
 
   res.json({
    success:true,
    coupon,
    discountAmount,
-   finalAmount:orderAmount - discountAmount
+   discount:discountAmount,
+   finalAmount:amount - discountAmount,
+   message:"Coupon applied successfully"
   });
 
  }catch(error){
