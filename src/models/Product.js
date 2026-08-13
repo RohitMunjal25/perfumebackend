@@ -1,34 +1,24 @@
 const mongoose = require("mongoose");
 
 const productSchema = new mongoose.Schema({
-
-  name:{
-    type:String,
-    required:true
+  name: {
+    type: String,
+    required: true
   },
+  brand: String,
+  description: String,
+  category: String,
 
-  brand:String,
+  // Duplicates hata diye hain, ab ye sirf ek baar define hain
+  coverImage: { type: String, default: "" },
+  forHim: { type: Boolean, default: false },
+  forHer: { type: Boolean, default: false },
+  unisex: { type: Boolean, default: true },
 
-  description:String,
-
-  category:String,
-
-  coverImage:{ type:String, default:"" },
-
-  forHim:{ type:Boolean, default:false },
-  forHer:{ type:Boolean, default:false },
-  unisex:{ type:Boolean, default:true },
-
-  coverImage:{ type:String, default:"" },
-
-  forHim:{ type:Boolean, default:false },
-  forHer:{ type:Boolean, default:false },
-  unisex:{ type:Boolean, default:true },
-
-  targetPages:[
+  targetPages: [
     {
-      type:String,
-      enum:[
+      type: String,
+      enum: [
         "home",
         "categories",
         "collections"
@@ -36,57 +26,60 @@ const productSchema = new mongoose.Schema({
     }
   ],
 
-  homepageSections:[
+  homepageSections: [
     {
-      type:String,
-      trim:true
+      type: String,
+      trim: true
     }
   ],
 
-  productImages:[
+  productImages: [
     {
-      url:{
-        type:String,
-        required:true
+      url: {
+        type: String,
+        required: true
       },
-      angle:{
-        type:String,
-        default:""
+      angle: {
+        type: String,
+        default: ""
       },
-      alt:{
-        type:String,
-        default:""
+      alt: {
+        type: String,
+        default: ""
       }
     }
   ],
 
-  price:{
-    type:Number,
-    required:true
+  price: {
+    type: Number,
+    required: true
   },
 
-  stock:{
-    type:Number,
-    default:0
+  // Ye raha tera size wala logic (pehle se tha, ekdum sahi hai)
+  bottleSizeMl: {
+    type: Number,
+    min: 1,
+    default: null
   },
 
-images:[
- {
-   type:String
- }
-],
+  stock: {
+    type: Number,
+    default: 0
+  },
 
-  featured:{
-    type:Boolean,
-    default:false
+  images: [
+    {
+      type: String
+    }
+  ],
+
+  featured: {
+    type: Boolean,
+    default: false
   }
 
-},{
-  timestamps:true
+}, {
+  timestamps: true
 });
 
-module.exports =
-mongoose.model(
-  "Product",
-  productSchema
-);
+module.exports = mongoose.model("Product", productSchema);
