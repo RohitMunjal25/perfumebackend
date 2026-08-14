@@ -41,13 +41,28 @@ const createOrder = async(req,res)=>{
   }
   const order = await Order.create(orderData);
 
-  // ---> NEW ADDITION: ADDRESS SAVE LOGIC <---
+  // ---> NEW SMART ADDRESS LOGIC: Duplicate Check <---
   if (orderData.userId && orderData.shippingAddress) {
-    await User.findByIdAndUpdate(
-      orderData.userId,
-      { $push: { addresses: orderData.shippingAddress } },
-      { new: true }
-    );
+    const userDoc = await User.findById(orderData.userId);
+    
+    if (userDoc) {
+      // Check if same address (matching address line and pincode) already exists
+      const isDuplicate = userDoc.addresses.some((addr) => {
+        return (
+          addr.address?.trim().toLowerCase() === orderData.shippingAddress.address?.trim().toLowerCase() &&
+          addr.pincode === orderData.shippingAddress.pincode
+        );
+      });
+
+      // Agar duplicate nahi hai, tabhi push karo
+      if (!isDuplicate) {
+        await User.findByIdAndUpdate(
+          orderData.userId,
+          { $push: { addresses: orderData.shippingAddress } },
+          { new: true }
+        );
+      }
+    }
   }
   // ---> NEW ADDITION END <---
 
