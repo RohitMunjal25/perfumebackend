@@ -1,7 +1,7 @@
 const Order = require("../models/Order");
 const Coupon = require("../models/Coupon");
 const User = require("../models/User");
-const { sendOrderConfirmation, sendTrackingUpdate } = require("../services/emailService");
+const { sendOrderConfirmation, sendTrackingUpdate, sendOrderDelivered } = require("../services/emailService");
 
 const createOrder = async(req,res)=>{
  try{
@@ -40,6 +40,16 @@ const createOrder = async(req,res)=>{
    if (!coupon) return res.status(400).json({ success: false, message: "Coupon is invalid, expired, or its usage limit has been reached" });
   }
   const order = await Order.create(orderData);
+
+  // ---> NEW ADDITION: ADDRESS SAVE LOGIC <---
+  if (orderData.userId && orderData.shippingAddress) {
+    await User.findByIdAndUpdate(
+      orderData.userId,
+      { $push: { addresses: orderData.shippingAddress } },
+      { new: true }
+    );
+  }
+  // ---> NEW ADDITION END <---
 
   const user =
   await User.findById(orderData.userId)
@@ -201,15 +211,24 @@ const updateOrder = async(req,res)=>{
    }
   ).populate("userId");
 
+  // ---> NEW ADDITION: EMAIL TRACKING & DELIVERED LOGIC <---
+  const email = originalOrder.userId.email;
+  const shortOrderId = String(updatedOrder._id).slice(-8).toUpperCase();
+
   // Email Tracking Logic
   if(req.body.trackingLink && req.body.trackingLink !== originalOrder.trackingLink) {
-     const email = originalOrder.userId.email;
      const courier = req.body.courierName || "Courier Partner";
      
-     await sendTrackingUpdate(email, updatedOrder._id, updatedOrder.trackingLink, courier);
+     await sendTrackingUpdate(email, shortOrderId, updatedOrder.trackingLink, courier);
      
      // NOTE: Agar WhatsApp service add karni ho toh yahan uska function call kar dena
   }
+
+  // Delivered Email Logic
+  if(req.body.orderStatus === "delivered" && originalOrder.orderStatus !== "delivered") {
+     await sendOrderDelivered(email, shortOrderId);
+  }
+  // ---> NEW ADDITION END <---
 
   res.json({
    success:true,
