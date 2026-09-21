@@ -15,9 +15,11 @@ const {
  updateContactStatus,
  deleteContact
 } = require("../controllers/contactController");
+const rateLimiter = require("../middleware/rateLimiter");
 
 router.post(
  "/",
+ rateLimiter,
  createContact
 );
 
