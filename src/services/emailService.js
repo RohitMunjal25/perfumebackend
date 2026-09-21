@@ -13,28 +13,27 @@ const transporter = nodemailer.createTransport({
 
 const brand = "Darnera";
 
-// NAYA LIGHT THEME TEMPLATE
 const template = (title, body) =>
-`<div style="background:#f7f5f0;padding:40px 20px;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;color:#3a3029;">
-  <div style="max-width:560px;margin:auto;background:#ffffff;border-radius:16px;border:1px solid #eadfd4;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.03);">
-    
-    <div style="padding:32px;background:#fffdfa;border-bottom:1px solid #eadfd4;text-align:center;font-size:28px;letter-spacing:4px;color:#342b24;font-family:Georgia, serif;text-transform:uppercase;">
-      ${brand}
-    </div>
-    
-    <div style="padding:40px 32px">
-      <h2 style="margin-top:0;font-family:Georgia, serif;font-weight:normal;font-size:22px;color:#342b24;">${title}</h2>
-      <div style="font-size:15px;line-height:1.6;color:#5c4e43;">
-        ${body}
-      </div>
-    </div>
-    
-    <div style="padding:24px 32px;color:#9a8b7e;font-size:12px;background:#faf7f2;text-align:center;border-top:1px solid #eadfd4;">
-      © ${new Date().getFullYear()} ${brand}. The Scent of Authority.
-    </div>
-    
+`<!doctype html>
+<html><body style="margin:0;padding:0;background:#eee7df;color:#2f2924;font-family:Arial,Helvetica,sans-serif;">
+  <div style="padding:36px 16px;background:linear-gradient(135deg,#eee7df 0%,#f8f4ee 100%);">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;margin:0 auto;border-collapse:separate;overflow:hidden;background:#fffdfa;border-radius:24px;box-shadow:0 14px 45px rgba(50,40,32,.12);">
+      <tr><td style="padding:30px 34px;background:#2d3d34;text-align:center;">
+        <div style="font-family:Georgia,'Times New Roman',serif;color:#fffaf3;font-size:29px;letter-spacing:8px;line-height:1;text-transform:uppercase;">${brand}</div>
+        <div style="margin-top:11px;color:#e9c49c;font-size:10px;font-weight:bold;letter-spacing:3px;text-transform:uppercase;">The scent of authority</div>
+      </td></tr>
+      <tr><td style="padding:38px 34px 30px;">
+        <div style="display:inline-block;margin-bottom:16px;padding:7px 10px;border-radius:99px;background:#f5eadf;color:#9a6544;font-size:10px;font-weight:bold;letter-spacing:1.6px;text-transform:uppercase;">Darnera update</div>
+        <h1 style="margin:0 0 16px;font-family:Georgia,'Times New Roman',serif;font-size:29px;font-weight:normal;line-height:1.2;color:#302820;">${title}</h1>
+        <div style="font-size:15px;line-height:1.75;color:#65574c;">${body}</div>
+      </td></tr>
+      <tr><td style="padding:22px 34px;background:#faf6f0;border-top:1px solid #eadfd4;text-align:center;color:#958578;font-size:11px;line-height:1.6;">
+        <strong style="color:#5f4f43;letter-spacing:1px;">DARNERA</strong><br />
+        © ${new Date().getFullYear()} Darnera. Crafted with intention.
+      </td></tr>
+    </table>
   </div>
-</div>`;
+</body></html>`;
 
 const send = (to, subject, html) =>
 transporter.sendMail({
@@ -161,6 +160,16 @@ send(
   )
 );
 
+const sendOrderCancelled = (email, orderId, reason) =>
+send(
+  email,
+  `Order cancelled: #${orderId}`,
+  template(
+    "Your order has been cancelled",
+    `<p>Your Darnera order <strong>#${orderId}</strong> has been cancelled.</p>${reason ? `<div style="background:#faf7f2;padding:16px;border-radius:8px;margin-top:16px;"><strong>Reason:</strong> ${reason}</div>` : ""}<p style="margin-top:20px;">If you need any help, please contact our support team.</p>`
+  )
+);
+
 module.exports = {
   sendOTPEmail,
   sendNewsletterWelcome,
@@ -168,5 +177,6 @@ module.exports = {
   sendContactResolved,
   sendOrderConfirmation,
   sendTrackingUpdate,
-  sendOrderDelivered // <- Export karna mat bhoolna
+  sendOrderDelivered,
+  sendOrderCancelled
 };

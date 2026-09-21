@@ -74,6 +74,16 @@ const orderSchema = new mongoose.Schema({
     default:""
   },
 
+  cancellationReason:{
+    type:String,
+    default:""
+  },
+
+  cancellationReason:{
+    type:String,
+    default:""
+  },
+
   courierName:{ type:String, default:"" },
 
   trackingEmbedSrc:{

@@ -1,7 +1,7 @@
 const Order = require("../models/Order");
 const Coupon = require("../models/Coupon");
 const User = require("../models/User");
-const { sendOrderConfirmation, sendTrackingUpdate, sendOrderDelivered } = require("../services/emailService");
+const { sendOrderConfirmation, sendTrackingUpdate, sendOrderDelivered, sendOrderCancelled } = require("../services/emailService");
 
 const createOrder = async(req,res)=>{
  try{
@@ -208,7 +208,8 @@ const updateOrder = async(req,res)=>{
    orderStatus:req.body.orderStatus,
    trackingLink:req.body.trackingLink,
    courierName:req.body.courierName,
-   trackingEmbedSrc:req.body.trackingEmbedSrc
+   trackingEmbedSrc:req.body.trackingEmbedSrc,
+   cancellationReason:req.body.cancellationReason
   };
 
   Object.keys(allowedUpdates).forEach((key)=>{
@@ -242,6 +243,9 @@ const updateOrder = async(req,res)=>{
   // Delivered Email Logic
   if(req.body.orderStatus === "delivered" && originalOrder.orderStatus !== "delivered") {
      await sendOrderDelivered(email, shortOrderId);
+  }
+  if(req.body.orderStatus === "cancelled" && originalOrder.orderStatus !== "cancelled") {
+     await sendOrderCancelled(email, shortOrderId, updatedOrder.cancellationReason);
   }
   // ---> NEW ADDITION END <---
 
