@@ -10,8 +10,10 @@ async(req,res)=>{
   const coupon = await Coupon.create({
    ...req.body,
    // Visibility does not affect whether a code can be redeemed.
-   isActive: true,
-   isVisible: req.body.isVisible !== false
+   isActive: req.body.isVisible !== false,
+   isVisible: req.body.isVisible !== false,
+   eligibility: ["all", "new_users", "selected_users"].includes(req.body.eligibility) ? req.body.eligibility : "all",
+   eligibleEmails: Array.isArray(req.body.eligibleEmails) ? req.body.eligibleEmails : []
   });
 
   res.status(201).json({
@@ -60,15 +62,14 @@ const getAvailableCoupons = async (req, res) => {
   const amount = Number(req.query.subtotal ?? 0);
   const now = new Date();
   const coupons = await Coupon.find({
-   $or: [
-    { isVisible: true },
-    // Preserve the previous hidden setting for coupons created before isVisible existed.
-    { isVisible: { $exists: false }, isActive: true }
-   ],
+   isActive: true,
+   $or: [{ isVisible: true }, { isVisible: { $exists: false } }],
    startDate: { $lte: now },
    $or: [{ endDate: null }, { endDate: { $gte: now } }]
   }).sort({ createdAt: -1 });
-  const eligibleCoupons = coupons.filter((coupon) => !couponUnavailableReason(coupon, amount, req.user.id, now));
+  const user = req.user ? await require("../models/User").findById(req.user.id).select("email") : null;
+  const eligibilityChecks = await Promise.all(coupons.map(async (coupon) => ({ coupon, unavailableReason: await couponUnavailableReason(coupon, amount, req.user.id, user?.email, now) })));
+  const eligibleCoupons = eligibilityChecks.filter(({ unavailableReason }) => !unavailableReason).map(({ coupon }) => coupon);
   res.json({ success: true, coupons: eligibleCoupons.map((coupon) => ({
    _id: coupon._id,
    code: coupon.code,
@@ -170,7 +171,8 @@ async(req,res)=>{
   const coupon = await Coupon.findOne({ code:String(code || "").toUpperCase() });
 
   const now = new Date();
-  const unavailableReason = couponUnavailableReason(coupon, amount, req.user.id, now);
+  const user = req.user ? await require("../models/User").findById(req.user.id).select("email") : null;
+  const unavailableReason = await couponUnavailableReason(coupon, amount, req.user.id, user?.email, now);
   if (unavailableReason) return res.status(400).json({ success:false, message:unavailableReason });
   const discountAmount = calculateDiscount(coupon, amount);
 

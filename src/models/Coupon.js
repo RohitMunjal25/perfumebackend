@@ -71,7 +71,19 @@ new mongoose.Schema({
   isVisible:{
     type:Boolean,
     default:true
-  }
+  },
+
+  eligibility:{
+    type:String,
+    enum:["all", "new_users", "selected_users"],
+    default:"all"
+  },
+
+  eligibleEmails:[{
+    type:String,
+    lowercase:true,
+    trim:true
+  }]
 
 },{
   timestamps:true

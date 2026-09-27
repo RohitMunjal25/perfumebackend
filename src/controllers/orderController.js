@@ -27,7 +27,8 @@ const createOrder = async(req,res)=>{
   if (orderData.couponCode) {
    const now = new Date();
    const coupon = await Coupon.findOne({ code: String(orderData.couponCode).toUpperCase() });
-   const unavailableReason = couponUnavailableReason(coupon, amount, orderData.userId, now);
+   const user = await User.findById(orderData.userId).select("email");
+   const unavailableReason = await couponUnavailableReason(coupon, amount, orderData.userId, user?.email, now);
    if (unavailableReason) return res.status(400).json({ success:false, message:unavailableReason });
    orderData.couponCode = coupon.code;
    orderData.discountAmount = calculateDiscount(coupon, amount);
