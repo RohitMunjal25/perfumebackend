@@ -33,7 +33,7 @@ const createOrder = async(req,res)=>{
    orderData.discountAmount = calculateDiscount(coupon, amount);
    orderData.finalAmount = Math.max(0, amount - orderData.discountAmount);
    const claimedCoupon = await Coupon.findOneAndUpdate(
-    { _id: coupon._id, isActive: true, startDate: { $lte: now }, usedBy: { $ne: orderData.userId }, $and: [{ $or: [{ endDate: null }, { endDate: { $gte: now } }] }, { $or: [{ usageLimit: null }, { $expr: { $lt: ["$usedCount", "$usageLimit"] } }] }] },
+    { _id: coupon._id, startDate: { $lte: now }, usedBy: { $ne: orderData.userId }, $and: [{ $or: [{ endDate: null }, { endDate: { $gte: now } }] }, { $or: [{ usageLimit: null }, { $expr: { $lt: ["$usedCount", "$usageLimit"] } }] }] },
     { $inc: { usedCount: 1 }, $addToSet: { usedBy: orderData.userId } }, { new: true }
    );
    if (!claimedCoupon) return res.status(400).json({ success: false, message: "Coupon is invalid, expired, already used, or its usage limit has been reached" });

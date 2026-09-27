@@ -8,7 +8,8 @@ const {
   loginWithPassword,
   setPassword,
   requestPasswordReset,
-  verifyPasswordReset,
+  verifyPasswordResetOtp,
+  completePasswordReset,
   requestEmailChange,
   verifyEmailChange,
   logout
@@ -23,7 +24,8 @@ router.post("/otp/verify", verifyOtp);
 router.post("/password/register", registerWithPassword);
 router.post("/password/login", loginWithPassword);
 router.post("/forgot/request", requestPasswordReset);
-router.post("/forgot/verify", verifyPasswordReset);
+router.post("/forgot/verify-otp", verifyPasswordResetOtp);
+router.post("/forgot/reset", completePasswordReset);
 router.patch("/password", auth, setPassword);
 router.post("/email-change/request", auth, requestEmailChange);
 router.post("/email-change/verify", auth, verifyEmailChange);

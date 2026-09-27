@@ -1,5 +1,5 @@
 const couponUnavailableReason = (coupon, amount, userId, now = new Date()) => {
-  if (!coupon || !coupon.isActive) return "Invalid coupon code";
+  if (!coupon) return "Invalid coupon code";
   if (coupon.startDate && coupon.startDate > now) return "Coupon is not active yet";
   if (coupon.endDate && coupon.endDate < now) return "Coupon expired";
   if (!Number.isFinite(amount) || amount <= 0) return "A valid order amount is required";

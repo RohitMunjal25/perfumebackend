@@ -64,6 +64,13 @@ new mongoose.Schema({
   isActive:{
     type:Boolean,
     default:true
+  },
+
+  // A hidden coupon can still be redeemed when a customer knows its code.
+  // This controls only whether it is shown in the checkout offers list.
+  isVisible:{
+    type:Boolean,
+    default:true
   }
 
 },{

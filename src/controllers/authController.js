@@ -1,4 +1,5 @@
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const Otp = require("../models/Otp");
 const TokenBlacklist = require("../models/TokenBlacklist");
@@ -7,6 +8,7 @@ const { sendOTPEmail } = require("../services/emailService");
 
 const OTP_TTL_MS = 5 * 60 * 1000;
 const OTP_RESEND_COOLDOWN_MS = 2 * 60 * 1000;
+const PASSWORD_RESET_TOKEN_TTL = "10m";
 
 const emailOf = (value) => String(value || "").trim().toLowerCase();
 const mobileOf = (value) => String(value || "").trim();
@@ -365,6 +367,44 @@ const verifyPasswordReset = async (req, res) => {
   }
 };
 
+const verifyPasswordResetOtp = async (req, res) => {
+  try {
+    const email = emailOf(req.body.email);
+    const { otp } = req.body;
+    if (!isEmail(email) || !otp) return res.status(400).json({ success:false, message:"email and OTP are required" });
+
+    const otpDoc = await Otp.findOne({ target:email, purpose:"password_reset", otp, expiresAt:{ $gt:new Date() } });
+    if (!otpDoc) return res.status(400).json({ success:false, message:"Invalid or expired OTP" });
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ success:false, message:"Account not found" });
+    await Otp.deleteMany({ target:email, purpose:"password_reset" });
+
+    const resetToken = jwt.sign({ id:user._id, purpose:"password_reset" }, process.env.JWT_SECRET, { expiresIn:PASSWORD_RESET_TOKEN_TTL });
+    res.json({ success:true, message:"OTP verified. You can now set a new password.", resetToken });
+  } catch (error) {
+    res.status(500).json({ success:false, message:error.message });
+  }
+};
+
+const completePasswordReset = async (req, res) => {
+  try {
+    const { resetToken, password, confirmPassword } = req.body;
+    if (!resetToken || !password || !confirmPassword) return res.status(400).json({ success:false, message:"New password and confirmation are required" });
+    if (String(password).length < 8) return res.status(400).json({ success:false, message:"Password must be at least 8 characters" });
+    if (password !== confirmPassword) return res.status(400).json({ success:false, message:"Passwords do not match" });
+
+    const decoded = jwt.verify(resetToken, process.env.JWT_SECRET);
+    if (decoded.purpose !== "password_reset") return res.status(401).json({ success:false, message:"Invalid password reset session" });
+    const user = await User.findByIdAndUpdate(decoded.id, { password:await bcrypt.hash(password, 12), isVerified:true }, { new:true, runValidators:true });
+    if (!user) return res.status(404).json({ success:false, message:"Account not found" });
+    res.json({ success:true, message:"Password reset successful", token:generateToken(user._id), user:publicUser(user) });
+  } catch (error) {
+    const message = error.name === "TokenExpiredError" ? "Password reset session expired. Please request a new OTP." : error.message;
+    res.status(401).json({ success:false, message });
+  }
+};
+
 const requestEmailChange = async (req, res) => {
   try {
     const email = emailOf(req.body.email);
@@ -446,7 +486,8 @@ module.exports = {
   loginWithPassword,
   setPassword,
   requestPasswordReset,
-  verifyPasswordReset,
+  verifyPasswordResetOtp,
+  completePasswordReset,
   requestEmailChange,
   verifyEmailChange,
   logout

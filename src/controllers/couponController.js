@@ -7,8 +7,12 @@ async(req,res)=>{
 
  try{
 
-  const coupon =
-  await Coupon.create(req.body);
+  const coupon = await Coupon.create({
+   ...req.body,
+   // Visibility does not affect whether a code can be redeemed.
+   isActive: true,
+   isVisible: req.body.isVisible !== false
+  });
 
   res.status(201).json({
    success:true,
@@ -56,7 +60,11 @@ const getAvailableCoupons = async (req, res) => {
   const amount = Number(req.query.subtotal ?? 0);
   const now = new Date();
   const coupons = await Coupon.find({
-   isActive: true,
+   $or: [
+    { isVisible: true },
+    // Preserve the previous hidden setting for coupons created before isVisible existed.
+    { isVisible: { $exists: false }, isActive: true }
+   ],
    startDate: { $lte: now },
    $or: [{ endDate: null }, { endDate: { $gte: now } }]
   }).sort({ createdAt: -1 });
@@ -159,10 +167,7 @@ async(req,res)=>{
 
   const amount = Number(orderAmount ?? subtotal ?? 0);
 
-  const coupon = await Coupon.findOne({
-   code:String(code || "").toUpperCase(),
-   isActive:true
-  });
+  const coupon = await Coupon.findOne({ code:String(code || "").toUpperCase() });
 
   const now = new Date();
   const unavailableReason = couponUnavailableReason(coupon, amount, req.user.id, now);
