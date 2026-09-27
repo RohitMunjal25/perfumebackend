@@ -1,5 +1,6 @@
 const Order = require("../models/Order");
 const Coupon = require("../models/Coupon");
+const { couponUnavailableReason, calculateDiscount } = require("../services/couponService");
 const User = require("../models/User");
 const { sendOrderConfirmation, sendTrackingUpdate, sendOrderDelivered, sendOrderCancelled } = require("../services/emailService");
 
@@ -17,27 +18,25 @@ const createOrder = async(req,res)=>{
    });
   }
 
-  if(!orderData.finalAmount){
-   orderData.finalAmount =
-   orderData.totalAmount - (orderData.discountAmount || 0);
-  }
-
-  if (orderData.couponCode) {
-   const coupon = await Coupon.findOne({ code: orderData.couponCode.toUpperCase(), isActive: true });
-   if (!coupon) return res.status(400).json({ success:false, message:"Coupon is invalid" });
-   const amount = Number(orderData.totalAmount || 0);
-   const calculated = coupon.discountType === "percentage" ? (amount * coupon.discountValue) / 100 : coupon.discountValue;
-   orderData.discountAmount = Math.min(calculated, coupon.maxDiscount || calculated, amount);
-   orderData.finalAmount = Math.max(0, amount - orderData.discountAmount);
-  }
+  const amount = Number(orderData.totalAmount);
+  if (!Number.isFinite(amount) || amount <= 0) return res.status(400).json({ success:false, message:"A valid order total is required" });
+  orderData.totalAmount = amount;
+  orderData.discountAmount = 0;
+  orderData.finalAmount = amount;
 
   if (orderData.couponCode) {
    const now = new Date();
-   const coupon = await Coupon.findOneAndUpdate(
-    { code: orderData.couponCode.toUpperCase(), isActive: true, startDate: { $lte: now }, $and: [{ $or: [{ endDate: null }, { endDate: { $gte: now } }] }, { $or: [{ usageLimit: null }, { $expr: { $lt: ["$usedCount", "$usageLimit"] } }] }] },
-    { $inc: { usedCount: 1 } }, { new: true }
+   const coupon = await Coupon.findOne({ code: String(orderData.couponCode).toUpperCase() });
+   const unavailableReason = couponUnavailableReason(coupon, amount, orderData.userId, now);
+   if (unavailableReason) return res.status(400).json({ success:false, message:unavailableReason });
+   orderData.couponCode = coupon.code;
+   orderData.discountAmount = calculateDiscount(coupon, amount);
+   orderData.finalAmount = Math.max(0, amount - orderData.discountAmount);
+   const claimedCoupon = await Coupon.findOneAndUpdate(
+    { _id: coupon._id, isActive: true, startDate: { $lte: now }, usedBy: { $ne: orderData.userId }, $and: [{ $or: [{ endDate: null }, { endDate: { $gte: now } }] }, { $or: [{ usageLimit: null }, { $expr: { $lt: ["$usedCount", "$usageLimit"] } }] }] },
+    { $inc: { usedCount: 1 }, $addToSet: { usedBy: orderData.userId } }, { new: true }
    );
-   if (!coupon) return res.status(400).json({ success: false, message: "Coupon is invalid, expired, or its usage limit has been reached" });
+   if (!claimedCoupon) return res.status(400).json({ success: false, message: "Coupon is invalid, expired, already used, or its usage limit has been reached" });
   }
   const order = await Order.create(orderData);
 

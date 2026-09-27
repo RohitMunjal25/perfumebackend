@@ -1,5 +1,6 @@
 const Coupon =
 require("../models/Coupon");
+const { couponUnavailableReason, calculateDiscount } = require("../services/couponService");
 
 const createCoupon =
 async(req,res)=>{
@@ -48,6 +49,30 @@ async(req,res)=>{
 
  }
 
+};
+
+const getAvailableCoupons = async (req, res) => {
+ try {
+  const amount = Number(req.query.subtotal ?? 0);
+  const now = new Date();
+  const coupons = await Coupon.find({
+   isActive: true,
+   startDate: { $lte: now },
+   $or: [{ endDate: null }, { endDate: { $gte: now } }]
+  }).sort({ createdAt: -1 });
+  const eligibleCoupons = coupons.filter((coupon) => !couponUnavailableReason(coupon, amount, req.user.id, now));
+  res.json({ success: true, coupons: eligibleCoupons.map((coupon) => ({
+   _id: coupon._id,
+   code: coupon.code,
+   discountType: coupon.discountType,
+   discountValue: coupon.discountValue,
+   minOrderAmount: coupon.minOrderAmount,
+   maxDiscount: coupon.maxDiscount,
+   endDate: coupon.endDate
+  })) });
+ } catch (error) {
+  res.status(500).json({ success:false, message:error.message });
+ }
 };
 
 const updateCoupon =
@@ -134,61 +159,15 @@ async(req,res)=>{
 
   const amount = Number(orderAmount ?? subtotal ?? 0);
 
-  const coupon =
-  await Coupon.findOne({
+  const coupon = await Coupon.findOne({
    code:String(code || "").toUpperCase(),
    isActive:true
   });
 
-  if(!coupon){
-   return res.status(404).json({
-    success:false,
-    message:"Invalid coupon code"
-   });
-  }
-
   const now = new Date();
-
-  if(coupon.startDate && coupon.startDate > now){
-   return res.status(400).json({
-    success:false,
-    message:"Coupon is not active yet"
-   });
-  }
-
-  if(coupon.endDate && coupon.endDate < now){
-   return res.status(400).json({
-    success:false,
-    message:"Coupon expired"
-   });
-  }
-
-  if(amount < coupon.minOrderAmount){
-   return res.status(400).json({
-    success:false,
-    message:`Minimum order amount is ${coupon.minOrderAmount}`
-   });
-  }
-
-  if(coupon.usageLimit && coupon.usedCount >= coupon.usageLimit){
-   return res.status(400).json({
-    success:false,
-    message:"Coupon usage limit reached"
-   });
-  }
-
-  let discountAmount =
-  coupon.discountType === "percentage"
-   ? (amount * coupon.discountValue) / 100
-   : coupon.discountValue;
-
-  if(coupon.maxDiscount){
-   discountAmount =
-   Math.min(discountAmount,coupon.maxDiscount);
-  }
-
-  discountAmount =
-  Math.min(discountAmount,amount);
+  const unavailableReason = couponUnavailableReason(coupon, amount, req.user.id, now);
+  if (unavailableReason) return res.status(400).json({ success:false, message:unavailableReason });
+  const discountAmount = calculateDiscount(coupon, amount);
 
   res.json({
    success:true,
@@ -213,6 +192,7 @@ async(req,res)=>{
 module.exports = {
  createCoupon,
  getCoupons,
+ getAvailableCoupons,
  updateCoupon,
  deleteCoupon,
  applyCoupon

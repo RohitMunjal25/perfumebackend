@@ -22,7 +22,8 @@ new mongoose.Schema({
 
   discountValue:{
     type:Number,
-    required:true
+    required:true,
+    min:0
   },
 
   minOrderAmount:{
@@ -54,6 +55,11 @@ new mongoose.Schema({
     type:Number,
     default:0
   },
+
+  usedBy:[{
+    type:mongoose.Schema.Types.ObjectId,
+    ref:"User"
+  }],
 
   isActive:{
     type:Boolean,

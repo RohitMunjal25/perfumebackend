@@ -2,9 +2,29 @@ const express = require("express");
 const WatchBuy = require("../models/WatchBuy");
 const DiscoveryPack = require("../models/DiscoveryPack");
 const InstagramFeed = require("../models/InstagramFeed");
+const FlashOffer = require("../models/FlashOffer");
 const { auth, admin } = require("../middleware/auth");
 
 const router = express.Router();
+
+router.get("/offer", async (_req, res) => {
+ try { res.json({ success:true, offer: await FlashOffer.findOne({ isActive:true }).sort({ updatedAt:-1 }) }); }
+ catch (error) { res.status(500).json({ success:false, message:error.message }); }
+});
+
+router.get("/admin/offer", auth, admin, async (_req, res) => {
+ try { res.json({ success:true, offer: await FlashOffer.findOne().sort({ updatedAt:-1 }) }); }
+ catch (error) { res.status(500).json({ success:false, message:error.message }); }
+});
+
+router.put("/admin/offer", auth, admin, async (req, res) => {
+ try {
+  const text = String(req.body.text || "").trim();
+  if (!text) return res.status(400).json({ success:false, message:"Offer text is required" });
+  const offer = await FlashOffer.findOneAndUpdate({}, { text, isActive: req.body.isActive === true }, { new:true, upsert:true, runValidators:true, setDefaultsOnInsert:true });
+  res.json({ success:true, offer });
+ } catch (error) { res.status(400).json({ success:false, message:error.message }); }
+});
 
 router.get("/watch-and-buy", async (_req, res) => {
   try {

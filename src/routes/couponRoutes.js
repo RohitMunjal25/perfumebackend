@@ -12,6 +12,7 @@ const {
 const {
  createCoupon,
  getCoupons,
+ getAvailableCoupons,
  updateCoupon,
  deleteCoupon,
  applyCoupon
@@ -19,13 +20,17 @@ const {
 
 router.post(
  "/apply",
+ auth,
  applyCoupon
 );
 
 router.post(
  "/validate",
+ auth,
  applyCoupon
 );
+
+router.get("/available", auth, getAvailableCoupons);
 
 router.post(
  "/",
